@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 )
 
 func main() {
@@ -22,6 +24,14 @@ func main() {
 		if text == "" {
 			continue
 		} else {
+			var nums []int
+			for _, s := range strings.Fields(text) {
+				num, err := strconv.Atoi(s)
+				if err != nil {
+					log.Fatal(err)
+				}
+				nums = append(nums, num)
+			}
 		}
 	}
 
