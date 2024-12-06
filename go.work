@@ -1,5 +1,10 @@
 go 1.23.3
 
 use ./day01
+
 use ./day02
-use ./day03
+
+use (
+	./day03
+	./day04
+)
