@@ -19,7 +19,7 @@ type fileBlock struct {
 
 func main() {
 	start := time.Now()
-	defer fmt.Println(time.Since(start))
+	defer func() { fmt.Println(time.Since(start)) }()
 	f, err := os.Open("day09/input.txt")
 
 	if err != nil {

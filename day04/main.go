@@ -13,7 +13,7 @@ const size = 140
 
 func main() {
 	start := time.Now()
-	defer fmt.Println(time.Since(start))
+	defer func() { fmt.Println(time.Since(start)) }()
 	f, err := os.Open("day04/input.txt")
 
 	if err != nil {

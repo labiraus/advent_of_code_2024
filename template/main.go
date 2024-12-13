@@ -12,7 +12,7 @@ import (
 
 func main() {
 	start := time.Now()
-	defer fmt.Println(time.Since(start))
+	defer func() { fmt.Println(time.Since(start)) }()
 	f, err := os.Open("day00/test.txt")
 
 	if err != nil {
