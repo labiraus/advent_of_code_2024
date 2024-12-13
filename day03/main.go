@@ -7,11 +7,14 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 var output = 0
 
 func main() {
+	start := time.Now()
+	defer fmt.Println(time.Since(start))
 	f, err := os.Open("day03/input.txt")
 
 	if err != nil {

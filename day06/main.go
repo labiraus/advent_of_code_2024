@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 type square struct {
@@ -20,6 +21,8 @@ type square struct {
 const size = 131
 
 func main() {
+	start := time.Now()
+	defer fmt.Println(time.Since(start))
 	f, err := os.Open("day06/input.txt")
 
 	if err != nil {

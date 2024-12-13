@@ -6,9 +6,12 @@ import (
 	"log"
 	"os"
 	"sort"
+	"time"
 )
 
 func main() {
+	start := time.Now()
+	defer fmt.Println(time.Since(start))
 	f, err := os.Open("day01/input.txt")
 
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 const size = 50
@@ -15,6 +16,8 @@ type coord struct {
 }
 
 func main() {
+	start := time.Now()
+	defer fmt.Println(time.Since(start))
 	f, err := os.Open("day08/input.txt")
 
 	if err != nil {
