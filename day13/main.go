@@ -13,7 +13,7 @@ import (
 func main() {
 	start := time.Now()
 	defer func() { fmt.Println(time.Since(start)) }()
-	f, err := os.Open("day10/test.txt")
+	f, err := os.Open("day13/test.txt")
 
 	if err != nil {
 		log.Fatal(err)
