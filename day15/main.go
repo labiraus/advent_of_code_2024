@@ -11,9 +11,24 @@ import (
 type cell struct {
 	wall bool
 	box  bool
+	r    bool
+}
+
+type move struct {
+	x int
+	y int
+	a rune
 }
 
 const size = 50
+
+// const logFrom = 347
+const logFrom = 1000000
+
+var grid = [size][size * 2]cell{}
+var completed map[move]bool
+var logging = false
+var deepLog = false
 
 func main() {
 	start := time.Now()
@@ -27,110 +42,190 @@ func main() {
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
 	output := 0
-	grid := [size][size]cell{}
 	actions := []rune{}
-	var robx, roby int
+	robot := move{}
 	i := 0
 	for scanner.Scan() {
 		text := scanner.Text()
 		if text == "" {
 			continue
 		} else {
-			for j, char := range text {
+			j := 0
+			for _, char := range text {
 				switch char {
 				case '#':
 					grid[i][j].wall = true
+					grid[i][j+1].wall = true
 				case '.':
 				case 'O':
 					grid[i][j].box = true
+					grid[i][j+1].box = true
+					grid[i][j+1].r = true
 				case '@':
-					robx = j
-					roby = i
+					robot.x = j
+					robot.y = i
 				default:
 					actions = append(actions, char)
 				}
+				j += 2
 			}
 			i++
 		}
 	}
-
+	i = 0
 	for _, a := range actions {
-		// printGrd(robx, roby, grid)
-		// fmt.Println(fmt.Sprint(i) + " Move " + string(a) + ":")
-		// input := ""
-		// fmt.Scanln(&input)
-		posx := robx
-		posy := roby
-		for {
-			posx, posy = movePos(a, posx, posy, true)
-			if !grid[posy][posx].box && !grid[posy][posx].wall {
-				for {
-					nextx := posx
-					nexty := posy
-					posx, posy = movePos(a, posx, posy, false)
-					if posx == robx && posy == roby {
-						grid[nexty][nextx].box = false
-						robx = nextx
-						roby = nexty
-						break
-					} else {
-						grid[posy][posx].box = false
-						grid[nexty][nextx].box = true
-					}
-				}
-				break
-			}
-			if grid[posy][posx].wall {
-				break
-			}
-			// if there's a box we'll keep going
+		robot.a = a
+		if i >= logFrom {
+			logging = true
 		}
+		if logging {
+			printGrid(robot, i)
+			input := ""
+			fmt.Scanln(&input)
+		}
+
+		completed = map[move]bool{}
+		if planPush(robot, false) {
+			completed = map[move]bool{}
+			planPush(robot, true)
+			robot = movePos(robot)
+		}
+		i++
 	}
 	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			if grid[i][j].box {
+		for j := 0; j < size*2; j++ {
+			if grid[i][j].box && !grid[i][j].r {
 				output += 100*i + j
 			}
 		}
 	}
-	// printGrd(robx, roby, grid)
+	robot.a = 'x'
+	printGrid(robot, 0)
 	fmt.Println(output)
 }
 
-func movePos(a rune, posx int, posy int, forward bool) (int, int) {
-	increment := 1
-	if !forward {
-		increment = -1
+// when you push a box that straddles two cells you need to mark it as on the right hand side of the left cell
+
+func planPush(m move, doPush bool) bool {
+	if completed[m] {
+		if logging && deepLog {
+			fmt.Println("completed", m, doPush)
+		}
+
+		return true
 	}
-	switch a {
+	ahead := movePos(m)
+	if grid[ahead.y][ahead.x].wall {
+		return false
+	}
+	if logging && deepLog {
+		fmt.Println("starting", m, ahead, grid[m.y][m.x], grid[ahead.y][ahead.x], doPush)
+	}
+	switch m.a {
 	case '>':
-		posx += increment
+		if !grid[ahead.y][ahead.x].box {
+			push(doPush, ahead, m)
+			return true
+		}
+
+		if planPush(ahead, doPush) {
+			push(doPush, ahead, m)
+			return true
+		}
 	case '<':
-		posx -= increment
-	case '^':
-		posy -= increment
-	case 'v':
-		posy += increment
+		if !grid[ahead.y][ahead.x].box {
+			push(doPush, ahead, m)
+			return true
+		}
+
+		if planPush(ahead, doPush) {
+			push(doPush, ahead, m)
+			return true
+		}
+	default:
+		if !grid[ahead.y][ahead.x].box {
+			push(doPush, ahead, m)
+			return true
+		}
+		offset := ahead
+		if grid[ahead.y][ahead.x].r {
+			offset.x--
+		} else {
+			offset.x++
+		}
+		if logging && deepLog {
+			fmt.Println("double", ahead, offset, doPush)
+		}
+		if planPush(ahead, doPush) && planPush(offset, doPush) {
+			push(doPush, ahead, m)
+			return true
+		}
 	}
-	return posx, posy
+	if logging && deepLog {
+		fmt.Println("nope", m, ahead, doPush)
+	}
+	return false
 }
 
-func printGrd(posx int, posy int, grid [size][size]cell) {
+func push(doPush bool, ahead move, m move) {
+	if doPush {
+		next := movePos(ahead)
+		if logging && deepLog {
+			fmt.Println("moving", m, ahead, next, grid[ahead.y][ahead.x], grid[next.y][next.x], doPush)
+		}
+		grid[ahead.y][ahead.x] = grid[m.y][m.x]
+		grid[m.y][m.x] = cell{}
+	}
+	completed[m] = true
+}
+
+func movePos(m move) move {
+	switch m.a {
+	case '>':
+		m.x++
+	case '<':
+		m.x--
+	case '^':
+		m.y--
+	case 'v':
+		m.y++
+	}
+	return m
+}
+
+func printGrid(position move, i int) {
+	filler := "|"
+	if position.a == 'x' {
+		filler = "."
+	}
+	block := ""
+	row := "X"
+	for i := 0; i < size*2; i++ {
+		row += fmt.Sprint(i % 10)
+	}
+	block += fmt.Sprintln(row)
 	for i := 0; i < size; i++ {
-		row := ""
-		for j := 0; j < size; j++ {
+		row := fmt.Sprint(i)
+		for j := 0; j < size*2; j++ {
 			switch {
-			case posy == i && posx == j:
+			case position.y == i && position.x == j:
 				row += "@"
 			case grid[i][j].wall:
 				row += "#"
-			case grid[i][j].box:
-				row += "O"
+			case grid[i][j].box && !grid[i][j].r:
+				row += "["
+			case grid[i][j].box && grid[i][j].r:
+				row += "]"
 			default:
-				row += "."
+				row += filler
 			}
 		}
-		fmt.Println(row)
+		block += fmt.Sprintln(row)
 	}
-	fmt.Println()
+	if position.a != 'x' {
+		block += fmt.Sprintln(i, "Move:", string(position.a))
+	} else {
+		block += fmt.Sprintln()
+	}
+	fmt.Print(block)
 }
